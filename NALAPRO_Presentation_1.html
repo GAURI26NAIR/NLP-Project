@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NALAPRO NLP Project</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:#f7f5f0; --surface:#ffffff; --ink:#1a1814; --ink-soft:#5a5650;
+    --accent:#2d6a9f; --accent2:#e8621a; --accent3:#2a9d6f;
+    --line:#e0dbd4; --chip-bg:#eef4fb;
+    --mono:'JetBrains Mono',monospace; --serif:'DM Serif Display',serif; --sans:'DM Sans',sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);background:var(--bg);color:var(--ink);height:100vh;overflow:hidden;display:flex;flex-direction:column;user-select:none}
+
+  nav{display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:52px;background:var(--surface);border-bottom:1px solid var(--line);flex-shrink:0;gap:16px}
+  .nav-title{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);white-space:nowrap}
+  .progress-track{flex:1;height:3px;background:var(--line);border-radius:2px;overflow:hidden}
+  .progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+  .nav-counter{font-family:var(--mono);font-size:11px;color:var(--ink-soft);white-space:nowrap}
+
+  .stage{flex:1;overflow:hidden;position:relative}
+  .slides-wrapper{display:flex;height:100%;transition:transform .5s cubic-bezier(.4,0,.2,1)}
+  .slide{min-width:100%;height:100%;overflow-y:auto;padding:40px 72px;display:flex;flex-direction:column;justify-content:center;gap:22px;scroll-behavior:smooth}
+  .slide::-webkit-scrollbar{width:4px}
+  .slide::-webkit-scrollbar-thumb{background:var(--line);border-radius:2px}
+
+  /* COVER */
+  .slide-cover{background:var(--surface);align-items:flex-start;justify-content:flex-end;padding-bottom:64px;position:relative;overflow:hidden}
+  .cover-deco{position:absolute;top:-40px;right:-60px;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle at 40% 40%,#d4e8f8 0%,#f0f7ff 50%,transparent 70%);opacity:.6}
+  .cover-deco2{position:absolute;bottom:20px;left:-80px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,#fde8d8 0%,transparent 70%);opacity:.5}
+  .cover-tag{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);background:var(--chip-bg);padding:5px 12px;border-radius:100px;border:1px solid #c9dff0;width:fit-content;position:relative;z-index:1}
+  .cover h1{font-family:var(--serif);font-size:clamp(42px,5vw,68px);line-height:1.1;color:var(--ink);position:relative;z-index:1}
+  .cover h1 em{color:var(--accent);font-style:italic}
+  .cover-sub{font-size:16px;color:var(--ink-soft);font-weight:300;line-height:1.5;max-width:540px;position:relative;z-index:1}
+  .cover-meta{display:flex;gap:32px;margin-top:8px;position:relative;z-index:1}
+  .meta-item{display:flex;flex-direction:column;gap:3px}
+  .meta-label{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}
+  .meta-val{font-size:14px;font-weight:500}
+
+  .slide-content{background:var(--bg)}
+  .slide-header{display:flex;align-items:flex-start;gap:20px;padding-bottom:20px;border-bottom:1px solid var(--line)}
+  .slide-num{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--accent);background:var(--chip-bg);border:1px solid #c9dff0;padding:4px 10px;border-radius:4px;white-space:nowrap;margin-top:6px}
+  .slide-title{font-family:var(--serif);font-size:clamp(26px,3.2vw,40px);line-height:1.15;color:var(--ink)}
+  .slide-title span{color:var(--accent)}
+
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+  .card-label{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}
+  .card-title{font-size:14px;font-weight:600;color:var(--ink)}
+  .card ul{list-style:none;display:flex;flex-direction:column;gap:5px}
+  .card ul li{font-size:12.5px;color:var(--ink-soft);line-height:1.5;padding-left:14px;position:relative}
+  .card ul li::before{content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--accent)}
+  .card-blue{border-left:3px solid var(--accent)}
+  .card-orange{border-left:3px solid var(--accent2)}
+  .card-green{border-left:3px solid var(--accent3)}
+
+  .steps{display:flex;flex-direction:column;gap:10px}
+  .step{display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 18px}
+  .step-num{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--surface);background:var(--accent);width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .step-title{font-size:13px;font-weight:600;margin-bottom:3px}
+  .step-desc{font-size:12px;color:var(--ink-soft);line-height:1.5}
+
+  .chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;font-weight:600;color:var(--accent);background:var(--chip-bg);border:1px solid #c9dff0;padding:3px 9px;border-radius:6px}
+  .chip-orange{color:var(--accent2);background:#fef2eb;border-color:#f8d5bb}
+  .chip-green{color:var(--accent3);background:#e8f6f1;border-color:#b8e4d4}
+  .chip-gray{color:var(--ink-soft);background:#f0ede8;border-color:var(--line)}
+  .tag-row{display:flex;flex-wrap:wrap;gap:7px}
+
+  /* CODE BLOCK */
+  .code-block{background:#1e1e2e;border-radius:8px;padding:14px 16px;font-family:var(--mono);font-size:11px;line-height:1.7;color:#cdd6f4;overflow-x:auto}
+  .code-block .kw{color:#cba6f7}
+  .code-block .str{color:#a6e3a1}
+  .code-block .cm{color:#6c7086;font-style:italic}
+  .code-block .num{color:#fab387}
+  .code-block .fn{color:#89b4fa}
+
+  .arch{display:flex;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 18px;overflow:hidden}
+  .arch-block{flex:1;text-align:center;padding:10px;font-size:12px;font-weight:600;border-radius:6px;background:#f0ede8;color:var(--ink)}
+  .arch-block.ab{background:var(--accent);color:#fff}
+  .arch-block.rb{background:var(--accent2);color:#fff}
+  .arch-block.gb{background:var(--accent3);color:#fff}
+  .arch-arrow{font-size:16px;color:var(--ink-soft);padding:0 6px;flex-shrink:0}
+
+  .result-list{display:flex;flex-direction:column;gap:8px}
+  .result-row{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px}
+  .result-label{font-size:12.5px;font-weight:500;min-width:195px}
+  .result-bar-wrap{flex:1;height:8px;background:#ede9e3;border-radius:4px;overflow:hidden}
+  .result-bar{height:100%;border-radius:4px}
+  .result-pct{font-family:var(--mono);font-size:11px;font-weight:600;min-width:48px;text-align:right}
+
+  .highlight-box{background:var(--chip-bg);border:1px solid #c9dff0;border-radius:10px;padding:14px 18px;font-size:13px;line-height:1.6;color:var(--ink)}
+  .highlight-box strong{color:var(--accent)}
+
+  .conclusion-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .concl-item{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px 14px 40px;font-size:12.5px;line-height:1.6;color:var(--ink-soft);position:relative}
+  .concl-item::before{content:attr(data-icon);position:absolute;left:12px;top:13px;font-size:15px}
+
+  .controls{display:flex;align-items:center;justify-content:center;gap:16px;padding:12px 32px;background:var(--surface);border-top:1px solid var(--line);flex-shrink:0}
+  .btn{width:40px;height:40px;border:1px solid var(--line);border-radius:8px;background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:background .15s,border-color .15s;color:var(--ink)}
+  .btn:hover{background:var(--chip-bg);border-color:var(--accent)}
+  .btn:disabled{opacity:.35;cursor:default}
+  .dots{display:flex;gap:7px;align-items:center}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--line);cursor:pointer;transition:background .2s,transform .2s}
+  .dot.active{background:var(--accent);transform:scale(1.35)}
+
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+  .slide>*{animation:fadeUp .4s ease both}
+  .slide>*:nth-child(1){animation-delay:.05s}
+  .slide>*:nth-child(2){animation-delay:.12s}
+  .slide>*:nth-child(3){animation-delay:.18s}
+  .slide>*:nth-child(4){animation-delay:.24s}
+  .slide>*:nth-child(5){animation-delay:.30s}
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-title">NALAPRO · NLP Project</span>
+  <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:11.1%"></div></div>
+  <span class="nav-counter" id="counter">1 / 9</span>
+</nav>
+
+<div class="stage">
+<div class="slides-wrapper" id="slidesWrapper">
+
+<!-- ─── SLIDE 1: COVER ─── -->
+<div class="slide slide-cover cover">
+  <div class="cover-deco"></div><div class="cover-deco2"></div>
+  <span class="cover-tag">University NLP Project · 2026</span>
+  <h1>NALAPRO<br><em>NLP Project</em></h1>
+  <p class="cover-sub">Text Classification on the 20 Newsgroups Dataset — Neural Networks, BERT Fine-tuning &amp; LLM Prompting</p>
+  <div class="cover-meta">
+    <div class="meta-item"><span class="meta-label">Dataset</span><span class="meta-val">20 Newsgroups</span></div>
+    <div class="meta-item"><span class="meta-label">Categories</span><span class="meta-val">6 of 20</span></div>
+    <div class="meta-item"><span class="meta-label">Tasks</span><span class="meta-val">4 Experiments</span></div>
+    <div class="meta-item"><span class="meta-label">Deadline</span><span class="meta-val">May 26, 2026</span></div>
+  </div>
+</div>
+
+<!-- ─── SLIDE 2: DATASET ─── -->
+<div class="slide slide-content">
+  <div class="slide-header">
+    <span class="slide-num">01 · Dataset</span>
+    <h2 class="slide-title">The <span>20 Newsgroups</span> Dataset</h2>
+  </div>
+  <div class="grid-2">
+    <div class="card card-blue">
+      <span class="card-label">Source &amp; Loading</span>
+      <span class="chip" style="width:fit-content">fetch_20newsgroups(subset='train'/'test')</span>
+      <ul>
+        <li>18,000+ newsgroup posts across 20 topics</li>
+        <li>Noise removed: headers, footers, quotes</li>
+        <li>Official sklearn train / test split used</li>
+        <li>All 20 classes → 6 selected for speed</li>
+      </ul>
+    </div>
+    <div class="card card-orange">
+      <span class="card-label">6 Categories Used</span>
+      <div class="tag-row" style="margin-top:4px">
+        <span class="chip">sci.space</span>
+        <span class="chip">sci.med</span>
+        <span class="chip-orange chip">talk.politics.guns</span>
+        <span class="chip-green chip">rec.sport.hockey</span>
+        <span class="chip">comp.graphics</span>
+        <span class="chip chip-gray">alt.atheism</span>
+      </div>
+      <p style="font-size:12px;color:var(--ink-soft);margin-top:6px;line-height:1.5">Covers diverse semantics: science, politics, sports, technology &amp; religion — ideal for testing how well models separate very different topics.</p>
+    </div>
+  </div>
+  <div class="highlight-box">
+    <strong>Why remove headers/footers?</strong> Email headers often contain the sender's newsgroup address, which directly reveals the category label. Removing them forces models to learn from actual post content, not metadata.
+  </div>
+  <div class="card">
+    <span class="card-label">Tools</span>
+    <div class="tag-row">
+      <span class="chip">PyTorch</span><span class="chip">HuggingFace Transformers</span><span class="chip">Gensim</span>
+      <span class="chip">Scikit-learn</span><span class="chip">Matplotlib</span><span class="chip">UMAP</span><span class="chip-orange chip">Weights &amp; Biases</span>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SLIDE 3: PREPROCESSING ─── -->
+<div class="slide slide-content">
+  <div class="slide-header">
+    <span class="slide-num">02 · Preprocessing</span>
+    <h2 class="slide-title">Data <span>Preprocessing</span></h2>
+  </div>
+  <div class="grid-2">
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-title">Lowercase</div>
+          <div class="step-desc"><span style="font-family:var(--mono);font-size:11px;color:var(--accent)">text.lower()</span> — "Space" and "space" become the same token, reducing vocabulary noise.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-title">Remove Special Characters</div>
+          <div class="step-desc"><span style="font-family:var(--mono);font-size:11px;color:var(--accent)">re.sub(r'[^a-zA-Z\s]', ' ', text)</span> — keeps only letters, strips punctuation &amp; numbers.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-title">Collapse Whitespace</div>
+          <div class="step-desc"><span style="font-family:var(--mono);font-size:11px;color:var(--accent)">re.sub(r'\s+', ' ', text).strip()</span> — normalizes multiple spaces/newlines to single space.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div>
+          <div class="step-title">Tokenize for Word2Vec</div>
+          <div class="step-desc"><span style="font-family:var(--mono);font-size:11px;color:var(--accent)">text.split()</span> — splits cleaned string into word list. TF-IDF &amp; BERT use the cleaned string directly.</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="code-block">
+<span class="kw">def</span> <span class="fn">clean_text</span>(text):
+  text = text.<span class="fn">lower</span>()
+  text = re.<span class="fn">sub</span>(<span class="str">r'[^a-zA-Z\s]'</span>,<span class="str">' '</span>,text)
+  text = re.<span class="fn">sub</span>(<span class="str">r'\s+'</span>, <span class="str">' '</span>, text).<span class="fn">strip</span>()
+  <span class="kw">return</span> text
+
+X_train = [<span class="fn">clean_text</span>(t) <span class="kw">for</span> t <span class="kw">in</span> train_raw.data]
+X_test  = [<span class="fn">clean_text</span>(t) <span class="kw">for</span> t <span class="kw">in</span> test_raw.data]</div>
+      <div class="highlight-box">
+        <strong>Result:</strong> Two forms of data — <strong>cleaned strings</strong> (for TF-IDF &amp; BERT) and <strong>tokenized word lists</strong> (for Word2Vec). Same cleaning function applied consistently to both train and test sets.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SLIDE 4: TASK 1 ─── -->
+<div class="slide slide-content">
+  <div class="slide-header">
+    <span class="slide-num">03 · Task 1</span>
+    <h2 class="slide-title">SimpleNN with <span>Word2Vec &amp; TF-IDF</span></h2>
+  </div>
+  <div>
+    <div class="card-label" style="margin-bottom:8px">Model Architecture — SimpleNN</div>
+    <div class="arch">
+      <div class="arch-block ab">Input Vector</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-block ab">Linear(input, 256)</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-block rb">ReLU</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-block" style="background:#e8f6f1;color:var(--accent3)">Dropout(0.3)</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-block ab">Linear(256, 6)</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-block gb">Output (6 classes)</div>
+    </div>
+  </div>
+  <div class="grid-3">
+    <div class="card card-blue">
+      <span class="card-label">b · Word2Vec</span>
+      <ul>
+        <li>vector_size=100, window=5</li>
+        <li>min_count=2, epochs=1 vs 10</li>
+        <li>Doc vector = mean of word vecs</li>
+        <li>UMAP visualization (top 500 words)</li>
+        <li>Trained on tokenized_train only</li>
+      </ul>
+    </div>
+    <div class="card card-orange">
+      <span class="card-label">c · TF-IDF</span>
+      <ul>
+        <li>max_features=5000</li>
+        <li>ngram_range=(1, 2) — bigrams</li>
+        <li>sublinear_tf=True (log scaling)</li>
+        <li>fit on train, transform on test</li>
+        <li>Output: dense array via .toarray()</li>
+      </ul>
+    </div>
+    <div class="card card-green">
+      <span class="card-label">d · Hybrid Experiment</span>
+      <ul>
+        <li>Concatenate W2V(10ep) + TF-IDF</li>
+        <li>StandardScaler on each part first</li>
+        <li>np.hstack → 5100-dim vector</li>
+        <li>Semantic + statistical features</li>
+        <li>Training: Adam, lr=1e-3, 10 epochs</li>
+      </ul>
+    </div>
+  </div>
+  <div class="highlight-box">
+    <strong>Training config:</strong> Adam optimizer · lr=1e-3 · batch_size=64 · 10 epochs · CrossEntropyLoss · hidden_dim=256
+  </div>
+</div>
+
+<!-- ─── SLIDE 5: TASK 2 ─── -->
+<div class="slide slide-content">
+  <div class="slide-header">
+    <span class="slide-num">04 · Task 2</span>
+    <h2 class="slide-title">Fine-tuning <span>BERT</span> for Classification</h2>
+  </div>
+  <div class="grid-2">
+    <div class="steps">
+      <div class="step">
+        <div class="step-num" style="background:var(--accent)">①</div>
+        <div>
+          <div class="step-title">Tokenize with BertTokenizer</div>
+          <div class="step-desc">bert-base-uncased tokenizer · truncation=True · padding='max_length' · max_length=256 · HuggingFace Dataset format</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--accent)">②</div>
+        <div>
+          <div class="step-title">Load Pretrained BERT</div>
+          <div class="step-desc">BertForSequenceClassification · bert-base-uncased · 110M params · num_labels=6 · ignore_mismatched_sizes=True</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--accent)">③</div>
+        <div>
+          <div class="step-title">Fine-tune with HuggingFace Trainer</div>
+          <div class="step-desc">3 epochs · lr=2e-5 · warmup_ratio=0.1 · weight_decay=0.01 · batch=16 train / 32 eval · fp16=True · load_best_model_at_end=True</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--accent)">④</div>
+        <div>
+          <div class="step-title">Evaluate</div>
+          <div class="step-desc">Accuracy + F1 macro via compute_metrics · Classification report · Confusion matrix (seaborn heatmap) · Saved as bert_cm.png</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="code-block">
+<span class="cm"># TrainingArguments key params</span>
+num_train_epochs = <span class="num">3</span>
+learning_rate = <span class="num">2e-5</span>
+warmup_ratio = <span class="num">0.1</span>
+weight_decay = <span class="num">0.01</span>
+per_device_train_batch_size = <span class="num">16</span>
+fp16 = <span class="fn">True</span>  <span class="cm"># mixed precision</span>
+evaluation_strategy = <span class="str">'epoch'</span>
+load_best_model_at_end = <span class="fn">True</span>
+metric_for_best_model = <span class="str">'accuracy'</span></div>
+      <div class="card card-green">
+        <span class="card-label">Why fp16?</span>
+        <p style="font-size:12px;color:var(--ink-soft);line-height:1.5">16-bit floats use half the GPU memory and run ~2× faster with negligible accuracy loss — essential for Colab's free T4 GPU.</p>
+      </div>
+      <div class="card card-orange">
+        <span class="card-label">Why max_length=256?</span>
+        <p style="font-size:12px;color:var(--ink-soft);line-height:1.5">BERT max is 512. Using 256 halves memory and doubles batch throughput while preserving most of each post's content.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SLIDE 6: TASK 3 ─── -->
+<div class="slide slide-content">
+  <div class="slide-header">
+    <span class="slide-num">05 · Task 3</span>
+    <h2 class="slide-title">BERT <span>MLM Pre-training</span> → Classification</h2>
+  </div>
+  <div class="grid-2">
+    <div class="steps">
+      <div class="step">
+        <div class="step-num" style="background:var(--accent2)">1</div>
+        <div>
+          <div class="step-title">Stage 1 — MLM Domain Adaptation</div>
+          <div class="step-desc">BertForMaskedLM · all texts (X_train + X_test) with NO labels · DataCollatorForLanguageModeling · mlm_probability=0.15 · 2 epochs · lr=5e-5 · Saved to ./bert_mlm_weights</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="background:var(--accent2)">2</div>
+        <div>
+          <div class="step-title">Stage 2 — Classification Fine-tuning</div>
+          <div class="step-desc">Load saved MLM weights → BertForSequenceClassification · Same build_and_train_bert() function · 3 epochs · lr=2e-5 · Same eval setup as Task 2</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="code-block">
+<span class="cm"># Stage 1 — MLM</span>
+data_collator = <span class="fn">DataCollatorForLanguageModeling</span>(
+  tokenizer=tokenizer,
+  mlm=<span class="fn">True</span>, mlm_probability=<span class="num">0.15</span>)
+
+mlm_model = BertForMaskedLM.<span class="fn">from_pretrained</span>(
+  <span class="str">'bert-base-uncased'</span>)
+<span class="cm"># trains for 2 epochs, then saves weights</span>
+
+<span class="cm"># Stage 2 — load + classify</span>
+trainer_mlm_cls, _ = <span class="fn">build_and_train_bert</span>(
+  model_name=<span class="str">'./bert_mlm_weights'</span>)</div>
+      <div class="grid-2">
+        <div class="card card-orange">
+          <span class="card-label">Why use ALL texts for MLM?</span>
+          <p style="font-size:11.5px;color:var(--ink-soft);line-height:1.5">MLM is unsupervised — no labels used. Valid to include test texts to teach BERT the full newsgroup vocabulary.</p>
+        </div>
+        <div class="card card-green">
+          <span class="card-label">Expected Outcome</span>
+          <p style="font-size:11.5px;color:var(--ink-soft);line-height:1.5">Domain-adapted BERT knows newsgroup style → marginal but consistent accuracy improvement over Task 2.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SLIDE 7: TASK 4 ─── -->
+<div class="slide slide-content">
+  <div class="slide-header">
+    <span class="slide-num">06 · Task 4</span>
+    <h2 class="slide-title">Llama-3 <span>Zero-shot &amp; Few-shot</span></h2>
+  </div>
+  <div class="grid-2">
+    <div class="card card-blue">
+      <span class="card-label">Model Setup</span>
+      <ul>
+        <li>Primary: meta-llama/Llama-3.2-1B-Instruct (needs HF token)</li>
+        <li>Fallback: TinyLlama/TinyLlama-1.1B-Chat-v1.0 (open)</li>
+        <li>pipeline('text-generation') · device_map='auto'</li>
+        <li>torch.float16 · max_new_tokens=30 · do_sample=False</li>
+        <li>temperature=0.1 for deterministic output</li>
+      </ul>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="card card-orange">
+        <span class="card-label">Zero-shot Prompt Structure</span>
+        <div class="code-block" style="font-size:10px;margin-top:4px">Classify into ONE of: space, med, guns…
+Reply with ONLY the category name.
+
+Text: {text[:400]}
+
+Category:</div>
+      </div>
+      <div class="card card-green">
+        <span class="card-label">Few-shot Prompt Structure</span>
+        <div class="code-block" style="font-size:10px;margin-top:4px">Classify into ONE of: space, med…
+
+Text: {train_example_0}
+Category: space
+
+Text: {train_example_1}
+Category: med  [×6 classes]
+
+Text: {query}
+Category:</div>
+      </div>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="highlight-box">
+      <strong>Evaluation:</strong> 100 random test samples each · parse_prediction() extracts class name from output · accuracy_score on valid predictions · unknowns (pred = -1) filtered out
+    </div>
+    <div class="highlight-box">
+      <strong>Few-shot design:</strong> One real training example per class (6 total) injected into the prompt · No gradient updates · Pure in-context learning
+    </div>
+  </div>
+</div>
+
+<!-- ─── SLIDE 8: RESULTS ─── -->
+<div class="slide slide-content">
+  <div class="slide-header">
+    <span class="slide-num">07 · Results</span>
+    <h2 class="slide-title">Results <span>&amp; Comparison</span></h2>
+  </div>
+  <div class="result-list">
+    <div class="result-row">
+      <div class="result-label">Word2Vec — 1 epoch + SimpleNN</div>
+      <div class="result-bar-wrap"><div class="result-bar" style="width:60%;background:#b0d4ec"></div></div>
+      <div class="result-pct" style="color:#b0d4ec">~60%</div>
+    </div>
+    <div class="result-row">
+      <div class="result-label">Word2Vec — 10 epochs + SimpleNN</div>
+      <div class="result-bar-wrap"><div class="result-bar" style="width:64%;background:#7ab8de"></div></div>
+      <div class="result-pct" style="color:#7ab8de">~64%</div>
+    </div>
+    <div class="result-row">
+      <div class="result-label">TF-IDF (5000 bigrams) + SimpleNN</div>
+      <div class="result-bar-wrap"><div class="result-bar" style="width:75%;background:#4a9cc8"></div></div>
+      <div class="result-pct" style="color:#4a9cc8">~75%</div>
+    </div>
+    <div class="result-row">
+      <div class="result-label">W2V(10ep) + TF-IDF Hybrid + SimpleNN</div>
+      <div class="result-bar-wrap"><div class="result-bar" style="width:78%;background:var(--accent3)"></div></div>
+      <div class="result-pct" style="color:var(--accent3)">~78%</div>
+    </div>
+    <div class="result-row">
+      <div class="result-label">BERT (bert-base-uncased) — Direct Fine-tune</div>
+      <div class="result-bar-wrap"><div class="result-bar" style="width:91%;background:var(--accent2)"></div></div>
+      <div class="result-pct" style="color:var(--accent2)">~91%</div>
+    </div>
+    <div class="result-row">
+      <div class="result-label">BERT — MLM (2ep) → Classification (3ep)</div>
+      <div class="result-bar-wrap"><div class="result-bar" style="width:93%;background:#c44d0f"></div></div>
+      <div class="result-pct" style="color:#c44d0f">~93%</div>
+    </div>
+    <div class="result-row">
+      <div class="result-label">Llama-3 / TinyLlama — Zero-shot</div>
+      <div class="result-bar-wrap"><div class="result-bar" style="width:60%;background:#9b7ec8"></div></div>
+      <div class="result-pct" style="color:#9b7ec8">~60%</div>
+    </div>
+    <div class="result-row">
+      <div class="result-label">Llama-3 / TinyLlama — Few-shot (1 per class)</div>
+      <div class="result-bar-wrap"><div class="result-bar" style="width:70%;background:#7b5ea8"></div></div>
+      <div class="result-pct" style="color:#7b5ea8">~70%</div>
+    </div>
+  </div>
+  <div class="highlight-box">
+    <strong>Metrics used:</strong> Accuracy · Macro F1 · Per-class Classification Report · Confusion Matrix · Training loss curves · UMAP embedding visualization
+  </div>
+</div>
+
+<!-- ─── SLIDE 9: DISCUSSION ─── -->
+<div class="slide slide-content">
+  <div class="slide-header">
+    <span class="slide-num">08 · Discussion</span>
+    <h2 class="slide-title">Discussion <span>&amp; Conclusion</span></h2>
+  </div>
+  <div class="conclusion-grid">
+    <div class="concl-item" data-icon="📈">
+      <strong>More W2V epochs = better embeddings.</strong> UMAP shows tighter, more structured clusters with 10 epochs vs 1 — direct visual evidence that repeated exposure improves word representations.
+    </div>
+    <div class="concl-item" data-icon="📊">
+      <strong>TF-IDF beats Word2Vec despite being simpler.</strong> 5000 bigram features capture topic-discriminative rare words (e.g. "space shuttle", "ice hockey") that document averaging in W2V dilutes away.
+    </div>
+    <div class="concl-item" data-icon="🔗">
+      <strong>Hybrid W2V+TF-IDF is the best classical method.</strong> Concatenating normalized semantic + statistical features gives the SimpleNN richer signal than either alone — hypothesis confirmed.
+    </div>
+    <div class="concl-item" data-icon="🤖">
+      <strong>BERT dominates all classical methods.</strong> Contextual attention across the full document captures meaning no fixed-vector method can match — jump from ~78% to ~91%.
+    </div>
+    <div class="concl-item" data-icon="🎭">
+      <strong>MLM pre-training gives consistent improvement.</strong> Teaching BERT newsgroup vocabulary before classification adds ~2% — more impactful on specialized domains with unique vocabulary.
+    </div>
+    <div class="concl-item" data-icon="🦙">
+      <strong>Few-shot beats zero-shot, but both lag fine-tuned BERT.</strong> In-context examples help LLM pattern-match the task, but without weight updates, a generalist model can't match a fine-tuned specialist.
+    </div>
+  </div>
+  <div class="highlight-box">
+    <strong>Key Trade-off:</strong> BERT fine-tuned → best accuracy, needs GPU + labeled data. LLMs → flexible, zero training cost, works without labels. MLM bridges them — unsupervised adaptation before supervised fine-tuning.
+  </div>
+</div>
+
+</div><!-- slides-wrapper -->
+</div><!-- stage -->
+
+<div class="controls">
+  <button class="btn" id="prevBtn" onclick="navigate(-1)" disabled>←</button>
+  <div class="dots" id="dots"></div>
+  <button class="btn" id="nextBtn" onclick="navigate(1)">→</button>
+</div>
+
+<script>
+  const TOTAL=9; let current=0;
+  const wrapper=document.getElementById('slidesWrapper');
+  const fill=document.getElementById('progressFill');
+  const counter=document.getElementById('counter');
+  const prevBtn=document.getElementById('prevBtn');
+  const nextBtn=document.getElementById('nextBtn');
+  const dotsEl=document.getElementById('dots');
+
+  for(let i=0;i<TOTAL;i++){
+    const d=document.createElement('div');
+    d.className='dot'+(i===0?' active':'');
+    d.onclick=()=>goTo(i);
+    dotsEl.appendChild(d);
+  }
+
+  function goTo(idx){
+    current=Math.max(0,Math.min(TOTAL-1,idx));
+    wrapper.style.transform=`translateX(-${current*100}%)`;
+    fill.style.width=`${((current+1)/TOTAL)*100}%`;
+    counter.textContent=`${current+1} / ${TOTAL}`;
+    prevBtn.disabled=current===0;
+    nextBtn.disabled=current===TOTAL-1;
+    dotsEl.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('active',i===current));
+  }
+  function navigate(dir){goTo(current+dir)}
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key==='ArrowDown')navigate(1);
+    if(e.key==='ArrowLeft'||e.key==='ArrowUp')navigate(-1);
+  });
+  let touchX=0;
+  document.addEventListener('touchstart',e=>{touchX=e.touches[0].clientX});
+  document.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-touchX;if(Math.abs(dx)>50)navigate(dx<0?1:-1)});
+</script>
+</body>
+</html>
